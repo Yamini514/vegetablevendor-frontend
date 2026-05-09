@@ -1,12 +1,13 @@
+import { useState } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Toaster } from 'react-hot-toast'
-import { AnimatePresence } from 'framer-motion'
 import { useAuthStore } from './store/authStore'
 
 import Header from './components/layout/Header'
 import Footer from './components/layout/Footer'
 import AdminSidebar from './components/layout/AdminSidebar'
+import AdminTopbar from './components/layout/AdminTopbar'
 import CartDrawer from './components/cart/CartDrawer'
 
 // User pages
@@ -20,6 +21,7 @@ import OrderDetailPage from './pages/OrderDetailPage'
 import InvoicePage from './pages/InvoicePage'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
+import ProfilePage from './pages/ProfilePage'
 import AboutPage from './pages/AboutPage'
 import ContactPage from './pages/ContactPage'
 import FaqPage from './pages/FaqPage'
@@ -36,6 +38,12 @@ import AdminOrdersPage from './pages/admin/AdminOrdersPage'
 import AdminReviewsPage from './pages/admin/AdminReviewsPage'
 import AdminInventoryPage from './pages/admin/AdminInventoryPage'
 import AdminContactMessagesPage from './pages/admin/AdminContactMessagesPage'
+import AdminCustomersPage from './pages/admin/AdminCustomersPage'
+import AdminDeliveriesPage from './pages/admin/AdminDeliveriesPage'
+import AdminWhatsAppPage from './pages/admin/AdminWhatsAppPage'
+import AdminAnalyticsPage from './pages/admin/AdminAnalyticsPage'
+import AdminCouponsPage from './pages/admin/AdminCouponsPage'
+import AdminSettingsPage from './pages/admin/AdminSettingsPage'
 
 const qc = new QueryClient({
   defaultOptions: {
@@ -57,12 +65,23 @@ function PublicLayout() {
 }
 
 function AdminLayout() {
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [collapsed, setCollapsed] = useState(false)
+
   return (
-    <div className="flex min-h-screen">
-      <AdminSidebar />
-      <main className="flex-1 p-6 bg-background overflow-auto">
-        <Outlet />
-      </main>
+    <div className="flex min-h-screen bg-background">
+      <AdminSidebar
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        collapsed={collapsed}
+        onToggleCollapse={() => setCollapsed((c) => !c)}
+      />
+      <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
+        <AdminTopbar onOpenSidebar={() => setSidebarOpen(true)} />
+        <main className="flex-1 overflow-auto p-4 lg:p-6">
+          <Outlet />
+        </main>
+      </div>
     </div>
   )
 }
@@ -92,12 +111,18 @@ export default function App() {
         <Toaster
           position="top-right"
           toastOptions={{
-            style: { fontFamily: 'Inter, sans-serif', fontSize: '14px' },
+            style: {
+              fontFamily: 'Inter, sans-serif',
+              fontSize: '14px',
+              borderRadius: '12px',
+              boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
+            },
             success: { iconTheme: { primary: '#16A34A', secondary: '#fff' } },
+            error: { iconTheme: { primary: '#EF4444', secondary: '#fff' } },
           }}
         />
         <Routes>
-          {/* Admin login — standalone dark page, no public layout */}
+          {/* Admin login — standalone */}
           <Route path="/admin/login" element={<AdminLoginPage />} />
 
           {/* Public layout */}
@@ -112,19 +137,18 @@ export default function App() {
             <Route path="/terms" element={<TermsPage />} />
             <Route path="/refund-policy" element={<RefundPolicyPage />} />
 
-            {/* Auth pages (guest only) */}
             <Route element={<GuestOnly />}>
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
             </Route>
 
-            {/* Protected user pages */}
             <Route element={<ProtectedRoute />}>
               <Route path="/cart" element={<CartPage />} />
               <Route path="/checkout" element={<CheckoutPage />} />
               <Route path="/orders" element={<OrdersPage />} />
               <Route path="/orders/:id" element={<OrderDetailPage />} />
               <Route path="/orders/:id/invoice" element={<InvoicePage />} />
+              <Route path="/profile" element={<ProfilePage />} />
             </Route>
           </Route>
 
@@ -132,16 +156,21 @@ export default function App() {
           <Route element={<AdminRoute />}>
             <Route element={<AdminLayout />}>
               <Route path="/admin" element={<AdminDashboardPage />} />
+              <Route path="/admin/orders" element={<AdminOrdersPage />} />
+              <Route path="/admin/inventory" element={<AdminInventoryPage />} />
+              <Route path="/admin/customers" element={<AdminCustomersPage />} />
+              <Route path="/admin/deliveries" element={<AdminDeliveriesPage />} />
+              <Route path="/admin/whatsapp" element={<AdminWhatsAppPage />} />
+              <Route path="/admin/analytics" element={<AdminAnalyticsPage />} />
+              <Route path="/admin/coupons" element={<AdminCouponsPage />} />
+              <Route path="/admin/settings" element={<AdminSettingsPage />} />
               <Route path="/admin/products" element={<AdminProductsPage />} />
               <Route path="/admin/categories" element={<AdminCategoriesPage />} />
-              <Route path="/admin/orders" element={<AdminOrdersPage />} />
               <Route path="/admin/reviews" element={<AdminReviewsPage />} />
-              <Route path="/admin/inventory" element={<AdminInventoryPage />} />
               <Route path="/admin/contact-messages" element={<AdminContactMessagesPage />} />
             </Route>
           </Route>
 
-          {/* 404 */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>

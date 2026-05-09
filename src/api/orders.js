@@ -37,6 +37,22 @@ export const useAdminOrders = (params = {}) =>
     queryFn: () => api.get('/admin/orders', { params }).then((r) => r.data),
   })
 
+export const useCancelOrder = () => {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id) =>
+      api.put(`/orders/${id}/cancel`).then((r) => r.data.data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['orders'] })
+      qc.invalidateQueries({ queryKey: ['order'] })
+      toast.success('Order cancelled successfully')
+    },
+    onError: (err) => {
+      toast.error(err.response?.data?.data || 'Failed to cancel order')
+    },
+  })
+}
+
 export const useUpdateOrderStatus = () => {
   const qc = useQueryClient()
   return useMutation({

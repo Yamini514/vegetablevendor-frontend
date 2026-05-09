@@ -83,13 +83,46 @@ export default function ShopPage() {
         </button>
       </div>
 
+      {/* Mobile filter drawer overlay */}
+      {showFilters && (
+        <div className="fixed inset-0 z-40 lg:hidden">
+          <div
+            className="absolute inset-0 bg-black/40"
+            onClick={() => setShowFilters(false)}
+          />
+          <div className="absolute top-0 left-0 bottom-0 w-72 max-w-[85vw] bg-white shadow-xl flex flex-col">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+              <h2 className="font-heading font-semibold text-base text-text">Filters</h2>
+              <button
+                onClick={() => setShowFilters(false)}
+                className="text-slate-400 hover:text-slate-600"
+                aria-label="Close filters"
+              >
+                <XMarkIcon className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4">
+              <ProductFilters filters={filters} onChange={handleFiltersChange} />
+            </div>
+            <div className="p-4 border-t border-gray-100">
+              <button
+                onClick={() => setShowFilters(false)}
+                className="btn-primary w-full py-2.5 rounded-xl text-sm"
+              >
+                Show Results
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex gap-6">
-        {/* Sidebar filters */}
-        <div className={`lg:block lg:w-56 shrink-0 ${showFilters ? 'block w-full' : 'hidden'}`}>
+        {/* Desktop sidebar filters — hidden on mobile */}
+        <div className="hidden lg:block lg:w-56 shrink-0">
           <ProductFilters filters={filters} onChange={handleFiltersChange} />
         </div>
 
-        {/* Product grid */}
+        {/* Product grid — always visible */}
         <div className="flex-1 min-w-0">
           <ProductGrid data={data} isLoading={isLoading} />
 

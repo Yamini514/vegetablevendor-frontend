@@ -66,7 +66,7 @@ export default function HeroBanner() {
   return (
     <section
       className="relative overflow-hidden select-none"
-      style={{ height: 'clamp(380px, 55vw, 640px)' }}
+      style={{ height: 'clamp(340px, 60vw, 640px)' }}
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
@@ -94,7 +94,7 @@ export default function HeroBanner() {
 
       {/* Text content */}
       <div className="relative h-full flex items-center">
-        <div className="max-w-7xl mx-auto px-6 sm:px-10 w-full">
+        <div className="max-w-7xl mx-auto px-5 lg:px-16 w-full">
           <AnimatePresence mode="wait">
             <motion.div
               key={slide.id}
@@ -104,39 +104,39 @@ export default function HeroBanner() {
               transition={{ duration: 0.5, ease: 'easeOut' }}
               className="max-w-xl"
             >
-              <span className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm text-white text-xs font-semibold px-3 py-1 rounded-full mb-4">
+              <span className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm text-white text-xs font-semibold px-3 py-1 rounded-full mb-3">
                 🌿 Farm Fresh Daily
               </span>
-              <h1 className="font-heading font-bold text-3xl sm:text-4xl lg:text-5xl text-white leading-tight mb-4 drop-shadow">
+              <h1 className="font-heading font-bold text-2xl sm:text-4xl lg:text-5xl text-white leading-tight mb-3 drop-shadow">
                 {slide.title}
               </h1>
-              <p className="text-white/85 text-sm sm:text-base mb-7 leading-relaxed max-w-md drop-shadow">
+              <p className="hidden sm:block text-white/85 text-sm sm:text-base mb-6 leading-relaxed max-w-md drop-shadow">
                 {slide.subtitle}
               </p>
-              <div className="flex flex-wrap gap-3">
+              <div className="flex flex-wrap gap-2 sm:gap-3">
                 <Link
                   to={slide.ctaLink}
-                  className="inline-flex items-center gap-2 bg-primary text-white font-semibold px-6 py-3 rounded-xl hover:bg-primary-dark transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 text-sm"
+                  className="inline-flex items-center gap-2 bg-primary text-white font-semibold px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl hover:bg-primary-dark transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 text-sm"
                 >
                   {slide.cta} →
                 </Link>
                 <Link
                   to="/about"
-                  className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm text-white font-semibold px-6 py-3 rounded-xl hover:bg-white/30 transition-all text-sm"
+                  className="hidden sm:inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm text-white font-semibold px-6 py-3 rounded-xl hover:bg-white/30 transition-all text-sm"
                 >
                   Learn More
                 </Link>
               </div>
 
               {/* Stats bar */}
-              <div className="flex gap-8 mt-9">
+              <div className="flex gap-4 sm:gap-8 mt-5 sm:mt-9">
                 {[
                   { val: '500+', label: 'Products' },
-                  { val: '10K+', label: 'Happy Customers' },
-                  { val: '100%', label: 'Fresh Guarantee' },
+                  { val: '10K+', label: 'Customers' },
+                  { val: '100%', label: 'Fresh' },
                 ].map(({ val, label }) => (
                   <div key={label}>
-                    <p className="font-heading font-bold text-xl text-white leading-none">{val}</p>
+                    <p className="font-heading font-bold text-base sm:text-xl text-white leading-none">{val}</p>
                     <p className="text-white/60 text-xs mt-0.5">{label}</p>
                   </div>
                 ))}
@@ -146,33 +146,35 @@ export default function HeroBanner() {
         </div>
       </div>
 
-      {/* Arrow controls */}
+      {/* Arrow controls — desktop only (lg+), dots used on mobile/tablet */}
       <button
         onClick={prev}
         aria-label="Previous slide"
-        className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/40 flex items-center justify-center text-white transition-all shadow"
+        className="hidden lg:flex absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/40 items-center justify-center text-white transition-all shadow"
       >
         <ChevronLeftIcon className="w-5 h-5" />
       </button>
       <button
         onClick={next}
         aria-label="Next slide"
-        className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/40 flex items-center justify-center text-white transition-all shadow"
+        className="hidden lg:flex absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/40 items-center justify-center text-white transition-all shadow"
       >
         <ChevronRightIcon className="w-5 h-5" />
       </button>
 
       {/* Dot indicators */}
-      <div className="absolute bottom-5 left-1/2 -translate-x-1/2 flex gap-2">
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1">
         {SLIDES.map((s, i) => (
           <button
             key={s.id}
             onClick={() => setIdx(i)}
             aria-label={`Go to slide ${i + 1}`}
-            className={`rounded-full transition-all duration-300 ${
-              i === idx ? 'w-6 h-2 bg-white' : 'w-2 h-2 bg-white/50 hover:bg-white/80'
-            }`}
-          />
+            className="p-1.5"
+          >
+            <span className={`block rounded-full transition-all duration-300 ${
+              i === idx ? 'w-5 h-2 bg-white' : 'w-2 h-2 bg-white/50'
+            }`} />
+          </button>
         ))}
       </div>
     </section>

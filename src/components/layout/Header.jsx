@@ -8,9 +8,9 @@ import {
   UserCircleIcon,
   ChevronDownIcon,
   ClipboardDocumentListIcon,
-  Cog6ToothIcon,
   ArrowRightOnRectangleIcon,
   ShieldCheckIcon,
+  UserIcon,
 } from '@heroicons/react/24/outline'
 import { useAuthStore } from '../../store/authStore'
 import { useCartStore } from '../../store/cartStore'
@@ -129,6 +129,17 @@ export default function Header() {
                       <MenuItem>
                         {({ focus }) => (
                           <Link
+                            to="/profile"
+                            className={`flex items-center gap-2.5 px-4 py-2 text-sm ${focus ? 'bg-primary-50 text-primary' : 'text-slate-700'}`}
+                          >
+                            <UserIcon className="w-4 h-4" />
+                            My Profile
+                          </Link>
+                        )}
+                      </MenuItem>
+                      <MenuItem>
+                        {({ focus }) => (
+                          <Link
                             to="/orders"
                             className={`flex items-center gap-2.5 px-4 py-2 text-sm ${focus ? 'bg-primary-50 text-primary' : 'text-slate-700'}`}
                           >
@@ -211,6 +222,10 @@ export default function Header() {
               <div className="border-t border-gray-100 pt-3 mt-2 px-2">
                 <p className="text-xs text-slate-400 mb-2">Signed in as <strong>{user?.full_name}</strong></p>
               </div>
+              <Link to="/profile" className="flex items-center gap-2 text-sm font-medium text-slate-700 hover:text-primary py-2 px-2 rounded-lg hover:bg-primary-50 transition-colors">
+                <UserIcon className="w-4 h-4" />
+                My Profile
+              </Link>
               <Link to="/orders" className="flex items-center gap-2 text-sm font-medium text-slate-700 hover:text-primary py-2 px-2 rounded-lg hover:bg-primary-50 transition-colors">
                 <ClipboardDocumentListIcon className="w-4 h-4" />
                 My Orders

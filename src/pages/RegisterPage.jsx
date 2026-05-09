@@ -9,7 +9,7 @@ import Button from '../components/ui/Button'
 export default function RegisterPage() {
   const navigate = useNavigate()
   const login = useAuthStore((s) => s.login)
-  const [form, setForm] = useState({ full_name: '', email: '', password: '', confirm_password: '' })
+  const [form, setForm] = useState({ full_name: '', email: '', phone_number: '', password: '', confirm_password: '' })
   const [errors, setErrors] = useState({})
   const [loading, setLoading] = useState(false)
   const [serverError, setServerError] = useState('')
@@ -20,6 +20,7 @@ export default function RegisterPage() {
     const e = {}
     if (!form.full_name.trim()) e.full_name = 'Name is required'
     if (!form.email.trim() || !/\S+@\S+\.\S+/.test(form.email)) e.email = 'Valid email required'
+    if (!form.phone_number.trim() || !/^[6-9]\d{9}$/.test(form.phone_number.trim())) e.phone_number = 'Valid 10-digit Indian mobile number required'
     if (form.password.length < 6) e.password = 'Password must be at least 6 characters'
     if (form.password !== form.confirm_password) e.confirm_password = 'Passwords do not match'
     setErrors(e)
@@ -35,6 +36,7 @@ export default function RegisterPage() {
       const res = await registerUser({
         full_name: form.full_name.trim(),
         email: form.email.trim().toLowerCase(),
+        phone_number: form.phone_number.trim(),
         password: form.password,
       })
       if (res.status === 'success') {
@@ -82,6 +84,15 @@ export default function RegisterPage() {
               error={errors.email}
               placeholder="you@example.com"
               autoComplete="email"
+            />
+            <Input
+              label="Mobile Number"
+              type="tel"
+              value={form.phone_number}
+              onChange={(e) => set('phone_number', e.target.value)}
+              error={errors.phone_number}
+              placeholder="10-digit mobile number"
+              autoComplete="tel"
             />
             <Input
               label="Password"

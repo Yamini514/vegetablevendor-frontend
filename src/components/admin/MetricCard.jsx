@@ -1,27 +1,42 @@
-const colors = {
-  green: { bg: 'bg-green-50', text: 'text-green-600', border: 'border-green-100' },
-  blue: { bg: 'bg-blue-50', text: 'text-blue-600', border: 'border-blue-100' },
-  yellow: { bg: 'bg-yellow-50', text: 'text-yellow-600', border: 'border-yellow-100' },
-  red: { bg: 'bg-red-50', text: 'text-red-600', border: 'border-red-100' },
-  purple: { bg: 'bg-purple-50', text: 'text-purple-600', border: 'border-purple-100' },
+import { TrendingUp, TrendingDown, Minus } from 'lucide-react'
+
+const colorMap = {
+  green:  { bg: 'bg-emerald-50',  iconBg: 'bg-emerald-500',  text: 'text-emerald-600',  ring: 'ring-emerald-100' },
+  blue:   { bg: 'bg-blue-50',     iconBg: 'bg-blue-500',     text: 'text-blue-600',     ring: 'ring-blue-100' },
+  orange: { bg: 'bg-orange-50',   iconBg: 'bg-orange-500',   text: 'text-orange-600',   ring: 'ring-orange-100' },
+  red:    { bg: 'bg-red-50',      iconBg: 'bg-red-500',      text: 'text-red-600',      ring: 'ring-red-100' },
+  yellow: { bg: 'bg-yellow-50',   iconBg: 'bg-yellow-500',   text: 'text-yellow-600',   ring: 'ring-yellow-100' },
+  purple: { bg: 'bg-purple-50',   iconBg: 'bg-purple-500',   text: 'text-purple-600',   ring: 'ring-purple-100' },
+  teal:   { bg: 'bg-teal-50',     iconBg: 'bg-teal-500',     text: 'text-teal-600',     ring: 'ring-teal-100' },
 }
 
-export default function MetricCard({ label, value, icon, color = 'green', subtitle }) {
-  const c = colors[color] || colors.green
+export default function MetricCard({ label, value, icon: Icon, iconEmoji, color = 'green', subtitle, trend, trendValue }) {
+  const c = colorMap[color] || colorMap.green
+
   return (
-    <div className={`bg-white rounded-2xl border ${c.border} p-5`}>
-      <div className="flex items-start justify-between">
-        <div>
-          <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">{label}</p>
-          <p className={`font-heading font-bold text-2xl ${c.text}`}>
-            {value ?? '—'}
-          </p>
-          {subtitle && <p className="text-xs text-slate-400 mt-0.5">{subtitle}</p>}
+    <div className="stat-card">
+      <div className="flex items-start justify-between mb-4">
+        <div className={`w-11 h-11 rounded-2xl ${c.iconBg} flex items-center justify-center shadow-sm ring-4 ${c.ring} shrink-0`}>
+          {Icon ? (
+            <Icon size={20} className="text-white" />
+          ) : (
+            <span className="text-lg">{iconEmoji}</span>
+          )}
         </div>
-        {icon && (
-          <div className={`${c.bg} rounded-xl p-2.5 text-xl`}>{icon}</div>
+        {trend !== undefined && (
+          <div className={`flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-lg ${
+            trend > 0 ? 'bg-emerald-50 text-emerald-600' :
+            trend < 0 ? 'bg-red-50 text-red-500' :
+            'bg-slate-50 text-slate-500'
+          }`}>
+            {trend > 0 ? <TrendingUp size={12} /> : trend < 0 ? <TrendingDown size={12} /> : <Minus size={12} />}
+            <span>{trendValue || `${Math.abs(trend)}%`}</span>
+          </div>
         )}
       </div>
+      <p className="text-2xl font-heading font-bold text-slate-800">{value ?? '—'}</p>
+      <p className="text-sm font-medium text-slate-500 mt-0.5">{label}</p>
+      {subtitle && <p className="text-xs text-slate-400 mt-1">{subtitle}</p>}
     </div>
   )
 }
