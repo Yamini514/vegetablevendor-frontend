@@ -8,6 +8,7 @@ import Header from './components/layout/Header'
 import Footer from './components/layout/Footer'
 import AdminSidebar from './components/layout/AdminSidebar'
 import AdminTopbar from './components/layout/AdminTopbar'
+import AdminBottomNav from './components/layout/AdminBottomNav'
 import CartDrawer from './components/cart/CartDrawer'
 
 // User pages
@@ -69,7 +70,7 @@ function AdminLayout() {
   const [collapsed, setCollapsed] = useState(false)
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="flex h-screen overflow-hidden bg-background">
       <AdminSidebar
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
@@ -78,10 +79,11 @@ function AdminLayout() {
       />
       <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
         <AdminTopbar onOpenSidebar={() => setSidebarOpen(true)} />
-        <main className="flex-1 overflow-auto p-4 lg:p-6">
+        <main className="flex-1 overflow-auto p-4 pb-20 md:p-6 md:pb-6">
           <Outlet />
         </main>
       </div>
+      <AdminBottomNav onOpenMenu={() => setSidebarOpen(true)} />
     </div>
   )
 }

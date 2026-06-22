@@ -19,9 +19,10 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (res) => res,
   (err) => {
-    if (err.response?.status === 401) {
+    const status = err.response?.status
+    const isAdminApi = err.config?.url?.includes('/admin/')
+    if (status === 401 || status === 403) {
       localStorage.removeItem('auth-storage')
-      const isAdminApi = err.config?.url?.startsWith('/admin/')
       window.location.href = isAdminApi ? '/admin/login' : '/login'
     }
     return Promise.reject(err)

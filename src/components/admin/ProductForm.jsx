@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, ImageOff, CheckCircle, Star, Eye, EyeOff, AlertTriangle } from 'lucide-react'
+import { X, ImageOff, CheckCircle, Star, Eye, EyeOff, AlertTriangle, Upload, Loader2 } from 'lucide-react'
 import { useCategories } from '../../api/categories'
+import { useUploadImage } from '../../api/admin'
 
 const UNIT_PRESETS = ['kg', '500g', '250g', 'g', 'piece', 'dozen', 'bunch', '6 pieces', '1 litre', 'pack', '100ml']
 
@@ -20,8 +21,10 @@ function Field({ label, required, error, hint, children }) {
 
 export default function ProductForm({ isOpen, onClose, onSubmit, product, isLoading }) {
   const { data: categories = [] } = useCategories()
-  const [customUnit, setCustomUnit] = useState(false)
-  const [imgError, setImgError]     = useState(false)
+  const [customUnit, setCustomUnit]   = useState(false)
+  const [imgError, setImgError]       = useState(false)
+  const fileInputRef                  = useRef(null)
+  const uploadImage                   = useUploadImage()
 
   const [form, setForm] = useState({
     name: '',
@@ -70,7 +73,7 @@ export default function ProductForm({ isOpen, onClose, onSubmit, product, isLoad
     const e = {}
     if (!form.name.trim())                      e.name        = 'Product name is required'
     if (!form.category_id)                       e.category_id = 'Select a category'
-    if (!form.price || isNaN(form.price) || Number(form.price) < 0) e.price = 'Enter a valid price'
+    if (!form.price || isNaN(form.price) || Number(form.price) <= 0) e.price = 'Enter a valid price (must be greater than 0)'
     if (!form.unit.trim())                       e.unit        = 'Unit is required'
     if (form.stock === '' || isNaN(form.stock)) e.stock       = 'Enter initial stock'
     setErrors(e)
@@ -126,7 +129,11 @@ export default function ProductForm({ isOpen, onClose, onSubmit, product, isLoad
               {/* Left: image preview */}
               <div className="sm:col-span-1">
                 <Field label="Product Image">
-                  <div className="w-full aspect-square rounded-2xl border-2 border-dashed border-gray-200 overflow-hidden bg-slate-50 flex items-center justify-center mb-2 relative group">
+                  {/* Preview */}
+                  <div
+                    className="w-full aspect-square rounded-2xl border-2 border-dashed border-gray-200 overflow-hidden bg-slate-50 flex items-center justify-center mb-2 relative group cursor-pointer"
+                    onClick={() => !uploadImage.isPending && fileInputRef.current?.click()}
+                  >
                     {form.image_url && !imgError ? (
                       <img
                         src={form.image_url}
@@ -138,17 +145,61 @@ export default function ProductForm({ isOpen, onClose, onSubmit, product, isLoad
                     ) : (
                       <div className="flex flex-col items-center gap-2 text-slate-300 p-4 text-center">
                         <ImageOff size={32} />
-                        <span className="text-xs">Paste image URL below</span>
+                        <span className="text-xs">Click to upload or paste URL</span>
+                      </div>
+                    )}
+                    {/* Upload overlay */}
+                    {uploadImage.isPending && (
+                      <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center gap-2">
+                        <Loader2 size={28} className="text-white animate-spin" />
+                        <span className="text-white text-xs font-medium">Uploading…</span>
+                      </div>
+                    )}
+                    {/* Hover overlay when image exists */}
+                    {form.image_url && !imgError && !uploadImage.isPending && (
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">
+                        <div className="flex flex-col items-center gap-1 text-white">
+                          <Upload size={20} />
+                          <span className="text-xs">Replace</span>
+                        </div>
                       </div>
                     )}
                   </div>
+
+                  {/* Hidden file input */}
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/gif"
+                    className="hidden"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0]
+                      if (!file) return
+                      e.target.value = ''
+                      const url = await uploadImage.mutateAsync(file).catch(() => null)
+                      if (url) { setForm((f) => ({ ...f, image_url: url })); setImgError(false) }
+                    }}
+                  />
+
+                  {/* Upload button */}
+                  <button
+                    type="button"
+                    disabled={uploadImage.isPending}
+                    onClick={() => fileInputRef.current?.click()}
+                    className="w-full flex items-center justify-center gap-2 py-2 rounded-xl border border-dashed border-slate-300 text-slate-500 hover:border-primary hover:text-primary transition-colors text-xs font-medium disabled:opacity-50 mb-2"
+                  >
+                    {uploadImage.isPending
+                      ? <><Loader2 size={13} className="animate-spin" /> Uploading…</>
+                      : <><Upload size={13} /> Upload from device</>}
+                  </button>
+
+                  {/* URL input */}
                   <input
                     value={form.image_url}
                     onChange={(e) => { set('image_url')(e); setImgError(false) }}
-                    placeholder="https://images.unsplash.com/..."
+                    placeholder="Or paste image URL…"
                     className="input-field text-xs"
                   />
-                  <p className="text-[11px] text-slate-400 mt-1">Use an Unsplash or CDN URL</p>
                 </Field>
 
                 {/* Featured + Active toggles */}

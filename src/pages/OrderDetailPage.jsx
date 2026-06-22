@@ -1,17 +1,17 @@
 import { useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { ArrowLeft, FileText, XCircle, MapPin, Wallet, CheckCircle, Package, Truck, Clock } from 'lucide-react'
+import { ArrowLeft, FileText, XCircle, MapPin, Wallet, CheckCircle, Package, Truck, Clock, RefreshCw } from 'lucide-react'
 import { useOrder, useCancelOrder } from '../api/orders'
 import { StatusBadge } from '../components/ui/Badge'
 import { formatPrice } from '../utils/formatPrice'
 import { formatDateTime } from '../utils/formatDate'
 
 const STEPS = [
-  { key: 'placed',           label: 'Order Placed',      icon: Clock },
-  { key: 'packed',           label: 'Packed',            icon: Package },
-  { key: 'out_for_delivery', label: 'Out for Delivery',  icon: Truck },
-  { key: 'delivered',        label: 'Delivered',         icon: CheckCircle },
+  { key: 'placed',           label: 'Order Placed',     icon: '📋' },
+  { key: 'packed',           label: 'Packed',           icon: '📦' },
+  { key: 'out_for_delivery', label: 'Out for Delivery', icon: '🚚' },
+  { key: 'delivered',        label: 'Delivered',        icon: '✅' },
 ]
 
 function StatusTracker({ status }) {
@@ -28,43 +28,39 @@ function StatusTracker({ status }) {
   }
 
   const currentIdx = STEPS.findIndex((s) => s.key === status)
+  const progressPct = currentIdx > 0 ? (currentIdx / (STEPS.length - 1)) * (100 - 10) : 0
 
   return (
     <div className="relative">
-      {/* Connecting line */}
-      <div className="absolute left-5 top-5 bottom-5 w-0.5 bg-gray-100" />
+      {/* Grey track */}
+      <div className="absolute top-5 left-5 right-5 h-0.5 bg-gray-200" style={{ zIndex: 0 }} />
+      {/* Colored progress */}
       <div
-        className="absolute left-5 top-5 w-0.5 bg-primary transition-all duration-700 origin-top"
-        style={{ height: `${(Math.max(currentIdx, 0) / (STEPS.length - 1)) * 100}%` }}
+        className="absolute top-5 left-5 h-0.5 bg-primary transition-all duration-700"
+        style={{ width: `${progressPct}%`, zIndex: 1 }}
       />
 
-      <div className="space-y-5 relative">
+      <div className="relative flex justify-between" style={{ zIndex: 2 }}>
         {STEPS.map((step, i) => {
           const done    = i <= currentIdx
-          const active  = i === currentIdx
-          const Icon    = step.icon
+          const current = i === currentIdx
           return (
-            <div key={step.key} className="flex items-center gap-4">
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 z-10 transition-all duration-500 ${
+            <div key={step.key} className="flex flex-col items-center gap-1.5 flex-1">
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 text-base transition-all duration-500 ${
                 done
-                  ? active
-                    ? 'bg-primary shadow-glow ring-4 ring-primary/20'
-                    : 'bg-primary'
-                  : 'bg-white border-2 border-gray-200'
-              }`}>
-                <Icon size={16} className={done ? 'text-white' : 'text-slate-300'} />
+                  ? 'bg-primary border-primary text-white'
+                  : 'bg-white border-gray-200 text-gray-300'
+              } ${current ? 'ring-4 ring-primary/20 scale-110' : ''}`}>
+                {done && i < currentIdx ? <CheckCircle size={18} className="text-white" /> : step.icon}
               </div>
-              <div className={`flex-1 ${active ? '' : 'opacity-60'}`}>
-                <p className={`text-sm font-semibold ${done ? 'text-slate-800' : 'text-slate-400'}`}>
-                  {step.label}
-                </p>
-                {active && status !== 'delivered' && (
-                  <p className="text-xs text-primary font-medium mt-0.5">In progress…</p>
+              <span className={`text-[11px] font-semibold text-center leading-snug ${done ? 'text-primary' : 'text-slate-400'}`}>
+                {step.label}
+                {current && (
+                  <span className="block text-[9px] font-bold uppercase tracking-wider text-primary/70 mt-0.5">
+                    Current
+                  </span>
                 )}
-                {step.key === 'delivered' && done && (
-                  <p className="text-xs text-emerald-600 font-medium mt-0.5">Completed!</p>
-                )}
-              </div>
+              </span>
             </div>
           )
         })}
@@ -106,7 +102,7 @@ function CancelModal({ orderId, onConfirm, onClose, loading }) {
 
 export default function OrderDetailPage() {
   const { id } = useParams()
-  const { data: order, isLoading } = useOrder(id)
+  const { data: order, isLoading, isFetching, isError, refetch } = useOrder(id)
   const { mutate: cancelOrder, isPending: cancelling } = useCancelOrder()
   const navigate = useNavigate()
   const [showCancelModal, setShowCancelModal] = useState(false)
@@ -121,11 +117,27 @@ export default function OrderDetailPage() {
     )
   }
 
-  if (!order) {
+  if (isError || !order) {
     return (
       <div className="max-w-2xl mx-auto px-4 py-20 text-center">
-        <p className="text-slate-400 mb-4">Order not found.</p>
-        <Link to="/orders" className="btn-primary">Back to Orders</Link>
+        <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
+          <Package size={28} className="text-slate-300" />
+        </div>
+        <p className="font-semibold text-slate-600 mb-1">
+          {isError ? 'Could not load order' : 'Order not found'}
+        </p>
+        <p className="text-sm text-slate-400 mb-6">
+          {isError ? 'There was a problem fetching this order.' : 'This order does not exist or you don\'t have access to it.'}
+        </p>
+        <div className="flex items-center justify-center gap-3">
+          {isError && (
+            <button onClick={() => refetch()} className="btn-primary">
+              <RefreshCw size={15} />
+              Retry
+            </button>
+          )}
+          <Link to="/orders" className="btn-secondary">Back to Orders</Link>
+        </div>
       </div>
     )
   }
@@ -147,6 +159,14 @@ export default function OrderDetailPage() {
             </div>
             <div className="flex items-center gap-2 flex-wrap">
               <StatusBadge status={order.status} />
+              <button
+                onClick={() => refetch()}
+                disabled={isFetching}
+                title="Refresh status"
+                className="btn-secondary btn-sm"
+              >
+                <RefreshCw size={14} className={isFetching ? 'animate-spin' : ''} />
+              </button>
               <button
                 onClick={() => navigate(`/orders/${order.id}/invoice`)}
                 className="btn-secondary btn-sm"
@@ -181,6 +201,15 @@ export default function OrderDetailPage() {
           <div className="card p-5 sm:p-6">
             <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-5">Order Status</h2>
             <StatusTracker status={order.status} />
+            {order.delivery_window && !['delivered', 'cancelled'].includes(order.status) && (
+              <div className="mt-5 pt-4 border-t border-gray-50 flex items-center gap-2.5">
+                <Clock size={14} className="text-primary shrink-0" />
+                <div>
+                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Expected Delivery</p>
+                  <p className="text-sm text-slate-700 font-medium mt-0.5">{order.delivery_window}</p>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Items */}
@@ -250,13 +279,25 @@ export default function OrderDetailPage() {
                 <Wallet size={15} className="text-primary" />
                 <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-widest">Payment</h2>
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center text-xl shrink-0">💵</div>
                 <div>
                   <p className="font-semibold text-sm text-slate-800">Cash on Delivery</p>
-                  <p className="text-xs text-slate-400">
-                    Pay {formatPrice(order.total_amount)} on arrival
-                  </p>
+                  <p className="text-xs text-slate-400">Pay on arrival</p>
+                </div>
+              </div>
+              <div className="bg-amber-50 border border-amber-100 rounded-xl px-4 py-3 space-y-1.5">
+                <div className="flex justify-between text-xs text-slate-500">
+                  <span>Order total</span>
+                  <span>{formatPrice(order.total_amount)}</span>
+                </div>
+                <div className="flex justify-between text-xs text-slate-500">
+                  <span>Delivery</span>
+                  <span className="text-emerald-600 font-medium">FREE</span>
+                </div>
+                <div className="flex justify-between font-bold text-sm pt-1.5 border-t border-amber-200">
+                  <span className="text-amber-800">Amount due (COD)</span>
+                  <span className="text-amber-700">{formatPrice(order.total_amount)}</span>
                 </div>
               </div>
               {order.notes && (

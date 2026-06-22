@@ -304,41 +304,77 @@ export default function AdminCategoriesPage() {
 
       {/* Table */}
       <div className="card overflow-hidden">
-        <div className="overflow-x-auto">
-          {isLoading ? (
-            <div className="p-6 space-y-3">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="skeleton-box h-14 rounded-xl animate-skeleton" />
+        {isLoading ? (
+          <div className="p-6 space-y-3">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="skeleton-box h-14 rounded-xl animate-skeleton" />
+            ))}
+          </div>
+        ) : categories.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-20 text-center">
+            <Layers size={40} className="text-slate-200 mb-3" />
+            <p className="text-slate-400 font-medium">No categories yet</p>
+            <p className="text-xs text-slate-300 mt-1 mb-4">Categories are used to organise your products</p>
+            <button onClick={openCreate} className="btn-primary">
+              <Plus size={15} />
+              Add your first category
+            </button>
+          </div>
+        ) : (
+          <>
+            {/* Mobile: card list */}
+            <div className="sm:hidden divide-y divide-gray-50">
+              {categories.map((c) => (
+                <div key={c.id} className="p-4 flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-xl overflow-hidden shrink-0 bg-slate-100">
+                    {c.image_url
+                      ? <img src={c.image_url} alt={c.name} className="w-full h-full object-cover" />
+                      : <div className="w-full h-full flex items-center justify-center text-xl">🏷️</div>}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-slate-700 text-sm">{c.name}</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="flex items-center gap-1 text-xs text-slate-500">
+                        <Package size={11} className="text-slate-400" />{c.product_count ?? 0} products
+                      </span>
+                      <span className={`badge ${c.active ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-500'}`}>
+                        {c.active ? <Eye size={10} /> : <EyeOff size={10} />}
+                        {c.active ? 'Active' : 'Hidden'}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button onClick={() => openEdit(c)} className="p-1.5 rounded-lg text-slate-400 hover:text-blue-500 hover:bg-blue-50 transition-colors">
+                      <Edit2 size={15} />
+                    </button>
+                    <button onClick={() => handleDelete(c)} className="p-1.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-50 transition-colors">
+                      <Trash2 size={15} />
+                    </button>
+                  </div>
+                </div>
               ))}
             </div>
-          ) : categories.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20 text-center">
-              <Layers size={40} className="text-slate-200 mb-3" />
-              <p className="text-slate-400 font-medium">No categories yet</p>
-              <p className="text-xs text-slate-300 mt-1 mb-4">Categories are used to organise your products</p>
-              <button onClick={openCreate} className="btn-primary">
-                <Plus size={15} />
-                Add your first category
-              </button>
+
+            {/* Desktop: table */}
+            <div className="hidden sm:block overflow-x-auto">
+              <table className="admin-table">
+                <thead>
+                  <tr>
+                    <th>Category</th>
+                    <th>Products</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {categories.map((c) => (
+                    <CategoryRow key={c.id} category={c} onEdit={openEdit} onDelete={handleDelete} />
+                  ))}
+                </tbody>
+              </table>
             </div>
-          ) : (
-            <table className="admin-table">
-              <thead>
-                <tr>
-                  <th>Category</th>
-                  <th>Products</th>
-                  <th>Status</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {categories.map((c) => (
-                  <CategoryRow key={c.id} category={c} onEdit={openEdit} onDelete={handleDelete} />
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
+          </>
+        )}
       </div>
 
       <CategoryForm

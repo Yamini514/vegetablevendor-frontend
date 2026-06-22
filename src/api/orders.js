@@ -6,13 +6,26 @@ export const useOrders = (params = {}) =>
   useQuery({
     queryKey: ['orders', params],
     queryFn: () => api.get('/orders', { params }).then((r) => r.data),
+    refetchInterval: 8_000,
+    refetchIntervalInBackground: true,
+    refetchOnWindowFocus: true,
   })
+
+const TERMINAL_STATUSES = ['delivered', 'cancelled']
 
 export const useOrder = (id) =>
   useQuery({
     queryKey: ['order', id],
     queryFn: () => api.get(`/orders/${id}`).then((r) => r.data.data),
     enabled: !!id,
+    // Stop polling once order reaches a terminal state
+    refetchInterval: (query) => {
+      const status = query.state.data?.status
+      if (TERMINAL_STATUSES.includes(status)) return false
+      return 5_000
+    },
+    refetchIntervalInBackground: true,
+    refetchOnWindowFocus: true,
   })
 
 export const usePlaceOrder = () => {
@@ -20,9 +33,14 @@ export const usePlaceOrder = () => {
   return useMutation({
     mutationFn: (payload) =>
       api.post('/orders', { data: payload }).then((r) => r.data.data),
-    onSuccess: () => {
+    onSuccess: (order) => {
+      // Seed the detail page cache immediately from the POST response
+      qc.setQueryData(['order', String(order.id)], order)
       qc.invalidateQueries({ queryKey: ['orders'] })
-      qc.invalidateQueries({ queryKey: ['cart'] })
+      // Directly set empty cart instead of invalidating — invalidate triggers a
+      // background refetch that can race with a subsequent add-to-cart and
+      // overwrite the newly added items with the stale empty cart.
+      qc.setQueryData(['cart'], { items: [], total: 0, item_count: 0 })
       toast.success('Order placed successfully!')
     },
     onError: (err) => {
@@ -31,10 +49,12 @@ export const usePlaceOrder = () => {
   })
 }
 
-export const useAdminOrders = (params = {}) =>
+export const useAdminOrders = (params = {}, options = {}) =>
   useQuery({
     queryKey: ['admin-orders', params],
     queryFn: () => api.get('/admin/orders', { params }).then((r) => r.data),
+    retry: 1,
+    ...options,
   })
 
 export const useCancelOrder = () => {
@@ -42,9 +62,9 @@ export const useCancelOrder = () => {
   return useMutation({
     mutationFn: (id) =>
       api.put(`/orders/${id}/cancel`).then((r) => r.data.data),
-    onSuccess: () => {
+    onSuccess: (order) => {
+      qc.setQueryData(['order', String(order.id)], order)
       qc.invalidateQueries({ queryKey: ['orders'] })
-      qc.invalidateQueries({ queryKey: ['order'] })
       toast.success('Order cancelled successfully')
     },
     onError: (err) => {
@@ -58,8 +78,11 @@ export const useUpdateOrderStatus = () => {
   return useMutation({
     mutationFn: ({ id, status }) =>
       api.put(`/admin/orders/${id}`, { data: { status } }).then((r) => r.data.data),
-    onSuccess: () => {
+    onSuccess: (order) => {
+      // Update customer-facing cache so detail page reflects change immediately
+      qc.setQueryData(['order', String(order.id)], order)
       qc.invalidateQueries({ queryKey: ['admin-orders'] })
+      qc.invalidateQueries({ queryKey: ['orders'] })
       toast.success('Order status updated')
     },
     onError: (err) => {

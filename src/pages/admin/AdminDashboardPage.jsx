@@ -230,28 +230,46 @@ export default function AdminDashboardPage() {
           ) : !data?.recent_orders?.length ? (
             <p className="text-slate-400 text-sm text-center py-10">No orders yet</p>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="admin-table">
-                <thead>
-                  <tr>
-                    {['Order #', 'Customer', 'Amount', 'Status', 'Date'].map((h) => (
-                      <th key={h}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.recent_orders.slice(0, 6).map((order) => (
-                    <tr key={order.id}>
-                      <td><span className="font-semibold text-slate-700">#{order.id}</span></td>
-                      <td><span className="text-slate-600">{order.address?.full_name || '—'}</span></td>
-                      <td><span className="font-semibold text-primary">{formatPrice(order.total_amount)}</span></td>
-                      <td><StatusBadge status={order.status} /></td>
-                      <td><span className="text-slate-400 text-xs">{formatDate(order.created_at)}</span></td>
+            <>
+              {/* Mobile: card list */}
+              <div className="sm:hidden divide-y divide-gray-50">
+                {data.recent_orders.slice(0, 6).map((order) => (
+                  <div key={order.id} className="flex items-center justify-between px-4 py-3 gap-3">
+                    <div>
+                      <p className="font-semibold text-slate-700 text-sm">#{order.id}</p>
+                      <p className="text-xs text-slate-400">{order.address?.full_name || '—'}</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <StatusBadge status={order.status} />
+                      <span className="font-semibold text-primary text-sm">{formatPrice(order.total_amount)}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {/* Desktop: table */}
+              <div className="hidden sm:block overflow-x-auto">
+                <table className="admin-table">
+                  <thead>
+                    <tr>
+                      {['Order #', 'Customer', 'Amount', 'Status', 'Date'].map((h) => (
+                        <th key={h}>{h}</th>
+                      ))}
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {data.recent_orders.slice(0, 6).map((order) => (
+                      <tr key={order.id}>
+                        <td><span className="font-semibold text-slate-700">#{order.id}</span></td>
+                        <td><span className="text-slate-600">{order.address?.full_name || '—'}</span></td>
+                        <td><span className="font-semibold text-primary">{formatPrice(order.total_amount)}</span></td>
+                        <td><StatusBadge status={order.status} /></td>
+                        <td><span className="text-slate-400 text-xs">{formatDate(order.created_at)}</span></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
         </div>
 

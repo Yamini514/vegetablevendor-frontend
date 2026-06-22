@@ -29,7 +29,7 @@ export default function AdminTopbar({ onOpenSidebar }) {
   return (
     <header className="sticky top-0 z-20 bg-white border-b border-gray-100 shadow-sm">
       <div className="flex items-center justify-between h-16 px-4 lg:px-6">
-        {/* Left: hamburger + breadcrumb */}
+        {/* Left: hamburger + title */}
         <div className="flex items-center gap-3">
           <button
             onClick={onOpenSidebar}
@@ -37,7 +37,10 @@ export default function AdminTopbar({ onOpenSidebar }) {
           >
             <Menu size={20} />
           </button>
-          <div className="flex items-center gap-1.5 text-sm">
+          {/* Mobile: just the current page title */}
+          <span className="font-heading font-bold text-slate-800 text-base lg:hidden">{pageTitle}</span>
+          {/* Desktop: breadcrumb */}
+          <div className="hidden lg:flex items-center gap-1.5 text-sm">
             <Link to="/admin" className="text-slate-400 hover:text-primary transition-colors font-medium">
               Admin
             </Link>
@@ -64,7 +67,7 @@ export default function AdminTopbar({ onOpenSidebar }) {
             {showNotifications && (
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setShowNotifications(false)} />
-                <div className="absolute right-0 top-full mt-2 w-80 bg-white rounded-2xl shadow-card-lg border border-gray-100 z-20 overflow-hidden">
+                <div className="absolute right-0 top-full mt-2 w-80 max-w-[calc(100vw-1.5rem)] bg-white rounded-2xl shadow-card-lg border border-gray-100 z-20 overflow-hidden">
                   <div className="px-4 py-3 border-b border-gray-50 flex items-center justify-between">
                     <p className="font-semibold text-sm text-slate-800">Notifications</p>
                     <span className="text-xs text-primary font-medium cursor-pointer hover:underline">Mark all read</span>

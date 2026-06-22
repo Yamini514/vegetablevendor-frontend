@@ -122,7 +122,7 @@ export default function AdminContactMessagesPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {[
           { label: 'Total Messages', value: total,       icon: Mail,     color: 'bg-blue-500',    ring: 'ring-blue-100' },
           { label: 'Unread',         value: unreadCount, icon: Inbox,    color: 'bg-primary',     ring: 'ring-primary-100' },

@@ -40,8 +40,17 @@ function ProductRow({ product, onEdit, onDelete }) {
         <span className="badge bg-slate-100 text-slate-600">{product.category_name || '—'}</span>
       </td>
       <td>
-        <p className="font-semibold text-slate-700">{formatPrice(product.price)}</p>
-        <p className="text-xs text-slate-400">per {product.unit}</p>
+        {product.price > 0 ? (
+          <>
+            <p className="font-semibold text-slate-700">{formatPrice(product.price)}</p>
+            <p className="text-xs text-slate-400">per {product.unit}</p>
+          </>
+        ) : (
+          <span className="badge bg-red-50 text-red-600 flex items-center gap-1">
+            <AlertTriangle size={10} />
+            Price not set
+          </span>
+        )}
       </td>
       <td>
         <p className="font-semibold text-slate-700">{product.stock}</p>
@@ -114,9 +123,10 @@ export default function AdminProductsPage() {
     if (window.confirm(`Delete "${p.name}"? This cannot be undone.`)) del(p.id)
   }
 
-  const activeCount   = products.filter((p) => p.active).length
-  const featuredCount = products.filter((p) => p.featured).length
-  const lowCount      = products.filter((p) => p.low_stock || p.is_out_of_stock).length
+  const activeCount    = products.filter((p) => p.active).length
+  const featuredCount  = products.filter((p) => p.featured).length
+  const lowCount       = products.filter((p) => p.low_stock || p.is_out_of_stock).length
+  const noPriceCount   = products.filter((p) => !p.price || p.price <= 0).length
 
   return (
     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-5 max-w-screen-2xl">
@@ -131,6 +141,17 @@ export default function AdminProductsPage() {
           Add Product
         </button>
       </div>
+
+      {/* Price warning banner */}
+      {noPriceCount > 0 && (
+        <div className="flex items-center gap-3 bg-red-50 border border-red-200 rounded-2xl px-5 py-3">
+          <AlertTriangle size={18} className="text-red-500 shrink-0" />
+          <p className="text-sm text-red-700 font-medium">
+            <strong>{noPriceCount} product{noPriceCount > 1 ? 's have' : ' has'} no price set.</strong>{' '}
+            Orders placed with these products will show ₹0.00. Click Edit to set a price.
+          </p>
+        </div>
+      )}
 
       {/* Summary cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -173,43 +194,84 @@ export default function AdminProductsPage() {
 
       {/* Table */}
       <div className="card overflow-hidden">
-        <div className="overflow-x-auto">
-          {isLoading ? (
-            <div className="p-6 space-y-3">
-              {Array.from({ length: 8 }).map((_, i) => (
-                <div key={i} className="skeleton-box h-14 rounded-xl animate-skeleton" />
+        {isLoading ? (
+          <div className="p-6 space-y-3">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="skeleton-box h-14 rounded-xl animate-skeleton" />
+            ))}
+          </div>
+        ) : products.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-20 text-center">
+            <Package size={40} className="text-slate-200 mb-3" />
+            <p className="text-slate-400 font-medium">No products found</p>
+            <button onClick={openCreate} className="btn-primary mt-4">
+              <Plus size={15} />
+              Add your first product
+            </button>
+          </div>
+        ) : (
+          <>
+            {/* Mobile: card list */}
+            <div className="sm:hidden divide-y divide-gray-50">
+              {products.map((p) => (
+                <div key={p.id} className="p-4 flex items-start gap-3">
+                  <div className="w-14 h-14 rounded-xl overflow-hidden shrink-0 bg-slate-100">
+                    {p.image_url
+                      ? <img src={p.image_url} alt={p.name} className="w-full h-full object-cover" />
+                      : <div className="w-full h-full flex items-center justify-center text-2xl">🥦</div>}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-2 mb-1">
+                      <p className="font-semibold text-slate-700 text-sm truncate">{p.name}</p>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button onClick={() => openEdit(p)} className="p-1.5 rounded-lg text-slate-400 hover:text-blue-500 hover:bg-blue-50 transition-colors">
+                          <Edit2 size={14} />
+                        </button>
+                        <button onClick={() => handleDelete(p)} className="p-1.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-50 transition-colors">
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-1.5 text-xs">
+                      <span className="badge bg-slate-100 text-slate-600">{p.category_name || '—'}</span>
+                      {p.price > 0
+                        ? <span className="font-semibold text-slate-700">{formatPrice(p.price)}/{p.unit}</span>
+                        : <span className="badge bg-red-50 text-red-600">No price</span>}
+                      <StockBadge product={p} />
+                      {p.featured && <span className="badge bg-yellow-50 text-yellow-600"><Star size={10} className="fill-yellow-400" /> Featured</span>}
+                      <span className={`badge ${p.active ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-500'}`}>
+                        {p.active ? 'Active' : 'Hidden'}
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-400 mt-1">Stock: <span className="font-semibold text-slate-600">{p.stock} {p.unit}</span></p>
+                  </div>
+                </div>
               ))}
             </div>
-          ) : products.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20 text-center">
-              <Package size={40} className="text-slate-200 mb-3" />
-              <p className="text-slate-400 font-medium">No products found</p>
-              <button onClick={openCreate} className="btn-primary mt-4">
-                <Plus size={15} />
-                Add your first product
-              </button>
+
+            {/* Desktop: table */}
+            <div className="hidden sm:block overflow-x-auto">
+              <table className="admin-table">
+                <thead>
+                  <tr>
+                    <th>Product</th>
+                    <th>Category</th>
+                    <th>Price</th>
+                    <th>Stock</th>
+                    <th>Stock Status</th>
+                    <th>Visibility</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {products.map((p) => (
+                    <ProductRow key={p.id} product={p} onEdit={openEdit} onDelete={handleDelete} />
+                  ))}
+                </tbody>
+              </table>
             </div>
-          ) : (
-            <table className="admin-table">
-              <thead>
-                <tr>
-                  <th>Product</th>
-                  <th>Category</th>
-                  <th>Price</th>
-                  <th>Stock</th>
-                  <th>Stock Status</th>
-                  <th>Visibility</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {products.map((p) => (
-                  <ProductRow key={p.id} product={p} onEdit={openEdit} onDelete={handleDelete} />
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
+          </>
+        )}
       </div>
 
       {/* Pagination */}

@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { MapPin, Plus, ChevronDown, ChevronUp, Check, X, Wallet, ShoppingBag, Tag } from 'lucide-react'
+import { MapPin, Plus, Check, X, Wallet, ShoppingBag, Tag } from 'lucide-react'
 import { useCart } from '../api/cart'
 import { useAddresses, useCreateAddress } from '../api/addresses'
 import { usePlaceOrder } from '../api/orders'
+import { useApplyCoupon } from '../api/coupons'
 import { formatPrice } from '../utils/formatPrice'
 
 const STATES = ['Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chhattisgarh','Goa','Gujarat','Haryana','Himachal Pradesh','Jharkhand','Karnataka','Kerala','Madhya Pradesh','Maharashtra','Manipur','Meghalaya','Mizoram','Nagaland','Odisha','Punjab','Rajasthan','Sikkim','Tamil Nadu','Telangana','Tripura','Uttar Pradesh','Uttarakhand','West Bengal','Delhi','Jammu & Kashmir','Ladakh','Puducherry']
@@ -98,18 +99,25 @@ function SectionCard({ icon: Icon, title, children }) {
   )
 }
 
+// Delivery fee thresholds (must match backend Setting defaults)
+const FREE_DELIVERY_ABOVE = 50000  // ₹500 in paise
+const DELIVERY_FEE        = 4000   // ₹40 in paise
+
 export default function CheckoutPage() {
   const navigate = useNavigate()
   const { data: cart, isLoading: cartLoading } = useCart()
   const { data: addresses = [], isLoading: addrLoading } = useAddresses()
   const { mutate: placeOrder, isPending: placing } = usePlaceOrder()
   const { mutate: createAddr, isPending: creatingAddr } = useCreateAddress()
+  const { mutate: applyCoupon, isPending: applyingCoupon } = useApplyCoupon()
 
   const [selectedAddress, setSelectedAddress] = useState(null)
-  const [showNewForm, setShowNewForm] = useState(false)
-  const [notes, setNotes] = useState('')
+  const [showNewForm, setShowNewForm]     = useState(false)
+  const [notes, setNotes]                 = useState('')
+  const [couponInput, setCouponInput]     = useState('')
+  const [appliedCoupon, setAppliedCoupon] = useState(null)
+  const orderSubmittedRef = useRef(false)
 
-  // Auto-select default (or first) address once addresses load
   useEffect(() => {
     if (!selectedAddress && addresses?.length) {
       const def = addresses.find((a) => a.is_default) || addresses[0]
@@ -117,11 +125,29 @@ export default function CheckoutPage() {
     }
   }, [addresses])
 
+  const subtotal     = cart?.total || 0
+  const deliveryFee  = subtotal >= FREE_DELIVERY_ABOVE ? 0 : DELIVERY_FEE
+  const discount     = appliedCoupon?.discount_amount || 0
+  const orderTotal   = subtotal + deliveryFee - discount
+
+  const handleApplyCoupon = () => {
+    if (!couponInput.trim()) return
+    applyCoupon(
+      { coupon_code: couponInput.trim(), subtotal },
+      { onSuccess: (data) => { setAppliedCoupon(data); setCouponInput('') } }
+    )
+  }
+
   const handlePlaceOrder = () => {
     if (!selectedAddress) { alert('Please select a delivery address.'); return }
-    placeOrder({ address_id: selectedAddress, notes }, {
-      onSuccess: (order) => navigate(`/orders/${order.id}`),
-    })
+    orderSubmittedRef.current = true
+    placeOrder(
+      { address_id: selectedAddress, notes, coupon_code: appliedCoupon?.code || null },
+      {
+        onSuccess: (order) => navigate(`/orders/${order.id}`),
+        onError: () => { orderSubmittedRef.current = false },
+      }
+    )
   }
 
   if (cartLoading || addrLoading) {
@@ -137,7 +163,7 @@ export default function CheckoutPage() {
     )
   }
 
-  if (!cart?.items?.length) { navigate('/cart'); return null }
+  if (!cart?.items?.length && !orderSubmittedRef.current) { navigate('/cart'); return null }
 
   const selectedAddr = addresses.find((a) => a.id === selectedAddress)
 
@@ -152,7 +178,6 @@ export default function CheckoutPage() {
             <div className="lg:col-span-3 space-y-4">
               {/* Address section */}
               <SectionCard icon={MapPin} title="Delivery Address">
-                {/* Selected address preview */}
                 {selectedAddr && (
                   <div className="flex items-start gap-3 p-3 bg-primary-50 border border-primary/20 rounded-xl mb-4">
                     <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shrink-0">
@@ -168,7 +193,6 @@ export default function CheckoutPage() {
                   </div>
                 )}
 
-                {/* All addresses */}
                 {addresses.length > 1 && (
                   <div className="space-y-2 mb-3">
                     {addresses.map((addr) => (
@@ -205,7 +229,6 @@ export default function CheckoutPage() {
                   </div>
                 )}
 
-                {/* Add new address toggle */}
                 <button
                   onClick={() => setShowNewForm(!showNewForm)}
                   className="flex items-center gap-2 text-sm font-medium text-primary hover:underline"
@@ -235,6 +258,47 @@ export default function CheckoutPage() {
                     <Check size={12} className="text-white" />
                   </div>
                 </div>
+              </SectionCard>
+
+              {/* Coupon */}
+              <SectionCard icon={Tag} title="Coupon Code">
+                {appliedCoupon ? (
+                  <div className="flex items-center justify-between p-3 bg-emerald-50 rounded-xl border border-emerald-100">
+                    <div>
+                      <p className="font-semibold text-emerald-700 text-sm">{appliedCoupon.code}</p>
+                      <p className="text-xs text-emerald-600 mt-0.5">
+                        {appliedCoupon.description || (appliedCoupon.discount_type === 'percent' ? `${appliedCoupon.value}% off` : `₹${appliedCoupon.value} off`)}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="font-bold text-emerald-700 text-sm">-{formatPrice(appliedCoupon.discount_amount)}</span>
+                      <button
+                        onClick={() => setAppliedCoupon(null)}
+                        className="p-1 rounded-lg text-emerald-500 hover:text-red-500 hover:bg-red-50 transition-colors"
+                        title="Remove coupon"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex gap-2">
+                    <input
+                      value={couponInput}
+                      onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
+                      onKeyDown={(e) => e.key === 'Enter' && handleApplyCoupon()}
+                      placeholder="Enter coupon code"
+                      className="input-field flex-1"
+                    />
+                    <button
+                      onClick={handleApplyCoupon}
+                      disabled={!couponInput.trim() || applyingCoupon}
+                      className="btn-primary shrink-0 disabled:opacity-50"
+                    >
+                      {applyingCoupon ? 'Applying…' : 'Apply'}
+                    </button>
+                  </div>
+                )}
               </SectionCard>
 
               {/* Order notes */}
@@ -274,15 +338,33 @@ export default function CheckoutPage() {
                 <div className="border-t border-gray-100 mt-4 pt-4 space-y-2">
                   <div className="flex justify-between text-sm text-slate-500">
                     <span>Subtotal ({cart.item_count} items)</span>
-                    <span>{formatPrice(cart.total)}</span>
+                    <span>{formatPrice(subtotal)}</span>
                   </div>
+
                   <div className="flex justify-between text-sm text-slate-500">
                     <span>Delivery</span>
-                    <span className="text-emerald-600 font-semibold">FREE</span>
+                    {deliveryFee === 0
+                      ? <span className="text-emerald-600 font-semibold">FREE</span>
+                      : <span>{formatPrice(deliveryFee)}</span>
+                    }
                   </div>
+
+                  {appliedCoupon && (
+                    <div className="flex justify-between text-sm text-emerald-600">
+                      <span>Coupon ({appliedCoupon.code})</span>
+                      <span>-{formatPrice(discount)}</span>
+                    </div>
+                  )}
+
+                  {subtotal > 0 && subtotal < FREE_DELIVERY_ABOVE && (
+                    <p className="text-xs text-amber-600">
+                      Add {formatPrice(FREE_DELIVERY_ABOVE - subtotal)} more for free delivery
+                    </p>
+                  )}
+
                   <div className="flex justify-between font-heading font-bold text-lg pt-3 border-t border-gray-100">
                     <span>Total</span>
-                    <span className="text-primary">{formatPrice(cart.total)}</span>
+                    <span className="text-primary">{formatPrice(orderTotal)}</span>
                   </div>
                 </div>
 

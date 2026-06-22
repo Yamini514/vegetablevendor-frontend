@@ -10,6 +10,7 @@ export const useCart = () => {
     queryFn: () => api.get('/cart').then((r) => r.data.data),
     enabled: !!token,
     staleTime: 30 * 1000,
+    refetchOnWindowFocus: true,
   })
 }
 
@@ -19,6 +20,8 @@ export const useAddToCart = () => {
     mutationFn: ({ product_id, quantity }) =>
       api.post('/cart/add', { data: { product_id, quantity } }).then((r) => r.data.data),
     onSuccess: (data) => {
+      // Cancel any in-flight cart fetch so it doesn't overwrite our fresh data
+      qc.cancelQueries({ queryKey: ['cart'] })
       qc.setQueryData(['cart'], data)
       toast.success('Added to cart!')
     },
@@ -34,6 +37,7 @@ export const useUpdateCartItem = () => {
     mutationFn: ({ product_id, quantity }) =>
       api.put('/cart/update', { data: { product_id, quantity } }).then((r) => r.data.data),
     onSuccess: (data) => {
+      qc.cancelQueries({ queryKey: ['cart'] })
       qc.setQueryData(['cart'], data)
     },
     onError: (err) => {
@@ -48,6 +52,7 @@ export const useRemoveFromCart = () => {
     mutationFn: (product_id) =>
       api.delete('/cart/remove', { data: { data: { product_id } } }).then((r) => r.data.data),
     onSuccess: (data) => {
+      qc.cancelQueries({ queryKey: ['cart'] })
       qc.setQueryData(['cart'], data)
     },
     onError: (err) => {
@@ -62,6 +67,7 @@ export const useClearCart = () => {
     mutationFn: () =>
       api.delete('/cart/clear').then((r) => r.data.data),
     onSuccess: (data) => {
+      qc.cancelQueries({ queryKey: ['cart'] })
       qc.setQueryData(['cart'], data)
     },
   })

@@ -41,7 +41,7 @@ export default function AdminSidebar({ isOpen, onClose, collapsed, onToggleColla
       )}
 
       <aside className={`
-        fixed lg:static inset-y-0 left-0 z-40 bg-sidebar flex flex-col shrink-0
+        fixed lg:static inset-y-0 left-0 z-40 bg-sidebar flex flex-col shrink-0 overflow-hidden lg:h-full
         transition-all duration-300 ease-in-out
         ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
         ${collapsed ? 'lg:w-[68px]' : 'w-64'}
@@ -161,10 +161,10 @@ export default function AdminSidebar({ isOpen, onClose, collapsed, onToggleColla
               )}
             </NavLink>
           ))}
-        </nav>
 
-        {/* User footer */}
-        <div className="p-3 border-t border-sidebar-border space-y-1">
+          {/* Divider before store/logout */}
+          <div className="my-2 border-t border-sidebar-border" />
+
           <Link
             to="/"
             title={collapsed ? 'Back to Store' : undefined}
@@ -203,7 +203,9 @@ export default function AdminSidebar({ isOpen, onClose, collapsed, onToggleColla
               </div>
             </div>
           )}
-        </div>
+
+          <div className="pb-2" />
+        </nav>
       </aside>
     </>
   )

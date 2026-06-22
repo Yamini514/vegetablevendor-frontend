@@ -1,20 +1,37 @@
+import { useState } from 'react'
 import { useCategories } from '../../api/categories'
 import Skeleton from '../ui/Skeleton'
 
 export default function ProductFilters({ filters, onChange }) {
   const { data: categories, isLoading } = useCategories()
+  const [priceErrors, setPriceErrors] = useState({ min_price: '', max_price: '' })
 
   const handleCategory = (id) => {
     const current = filters.category_id
-    onChange({ ...filters, category_id: current === id ? '' : id, page: 1 })
+    // eslint-disable-next-line eqeqeq
+    onChange({ ...filters, category_id: current == id ? '' : id, page: 1 })
   }
 
-  const handlePrice = (key, val) => {
-    onChange({ ...filters, [key]: val, page: 1 })
+  const handlePrice = (key, rawValue) => {
+    if (rawValue === '') {
+      setPriceErrors((e) => ({ ...e, [key]: '' }))
+      onChange({ ...filters, [key]: '', page: 1 })
+      return
+    }
+
+    const num = parseFloat(rawValue)
+    if (num < 0) {
+      setPriceErrors((e) => ({ ...e, [key]: 'Price cannot be negative' }))
+      return
+    }
+
+    setPriceErrors((e) => ({ ...e, [key]: '' }))
+    onChange({ ...filters, [key]: Math.round(num * 100), page: 1 })
   }
 
   const clearAll = () => {
-    onChange({ page: 1 })
+    setPriceErrors({ min_price: '', max_price: '' })
+    onChange({ category_id: '', search: '', min_price: '', max_price: '', page: 1 })
   }
 
   const hasFilters = filters.category_id || filters.min_price || filters.max_price || filters.search
@@ -72,9 +89,12 @@ export default function ProductFilters({ filters, onChange }) {
                 type="number"
                 placeholder="0"
                 value={filters.min_price ? filters.min_price / 100 : ''}
-                onChange={(e) => handlePrice('min_price', e.target.value ? Math.round(e.target.value * 100) : '')}
-                className="input-field text-xs py-1.5"
+                onChange={(e) => handlePrice('min_price', e.target.value)}
+                className={`input-field text-xs py-1.5 ${priceErrors.min_price ? 'border-red-400 focus:ring-red-200' : ''}`}
               />
+              {priceErrors.min_price && (
+                <p className="text-[10px] text-red-500 mt-1">{priceErrors.min_price}</p>
+              )}
             </div>
             <div>
               <label className="text-xs text-slate-500 block mb-1">Max (₹)</label>
@@ -82,9 +102,12 @@ export default function ProductFilters({ filters, onChange }) {
                 type="number"
                 placeholder="Any"
                 value={filters.max_price ? filters.max_price / 100 : ''}
-                onChange={(e) => handlePrice('max_price', e.target.value ? Math.round(e.target.value * 100) : '')}
-                className="input-field text-xs py-1.5"
+                onChange={(e) => handlePrice('max_price', e.target.value)}
+                className={`input-field text-xs py-1.5 ${priceErrors.max_price ? 'border-red-400 focus:ring-red-200' : ''}`}
               />
+              {priceErrors.max_price && (
+                <p className="text-[10px] text-red-500 mt-1">{priceErrors.max_price}</p>
+              )}
             </div>
           </div>
         </div>

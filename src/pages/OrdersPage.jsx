@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { Link } from 'react-router-dom'
-import { Package, ChevronRight, Clock, CheckCircle, XCircle, Truck, ShoppingBag } from 'lucide-react'
+import { Package, ChevronRight, Clock, CheckCircle, XCircle, Truck, ShoppingBag, RefreshCw } from 'lucide-react'
 import { useOrders } from '../api/orders'
 import { StatusBadge } from '../components/ui/Badge'
 import { formatPrice } from '../utils/formatPrice'
@@ -34,7 +34,10 @@ function OrderProgressBar({ status }) {
   }
 
   const currentIdx = STEPS.indexOf(status)
-  const progressPct = currentIdx < 0 ? 0 : (currentIdx / (STEPS.length - 1)) * 100
+  // Place dots at 1/8, 3/8, 5/8, 7/8 of the bar so the fill always
+  // extends to the active dot (even for 'placed' which is step 0).
+  const dotPct = (i) => ((2 * i + 1) / (2 * STEPS.length)) * 100
+  const progressPct = currentIdx < 0 ? 0 : dotPct(currentIdx)
 
   return (
     <div className="mt-3">
@@ -44,7 +47,7 @@ function OrderProgressBar({ status }) {
           style={{ width: `${progressPct}%` }}
         />
         {STEPS.map((step, i) => {
-          const pct = (i / (STEPS.length - 1)) * 100
+          const pct = dotPct(i)
           const done = i <= currentIdx
           return (
             <div
@@ -57,11 +60,12 @@ function OrderProgressBar({ status }) {
           )
         })}
       </div>
-      <div className="flex justify-between mt-1.5">
+      <div className="relative mt-1.5 h-4">
         {STEPS.map((step, i) => (
           <span
             key={step}
-            className={`text-[10px] font-semibold ${i <= currentIdx ? 'text-primary' : 'text-slate-300'}`}
+            className={`absolute text-[10px] font-semibold -translate-x-1/2 ${i <= currentIdx ? 'text-primary' : 'text-slate-300'}`}
+            style={{ left: `${dotPct(i)}%` }}
           >
             {STEP_LABELS[step]}
           </span>
@@ -136,7 +140,7 @@ function OrderSkeleton() {
 
 export default function OrdersPage() {
   const [activeFilter, setActiveFilter] = useState('')
-  const { data, isLoading } = useOrders()
+  const { data, isLoading, isFetching, refetch } = useOrders()
   const allOrders = data?.data || []
 
   const filtered = activeFilter
@@ -158,7 +162,14 @@ export default function OrdersPage() {
                 {activeCount > 0 && <span className="ml-2 text-primary font-semibold">· {activeCount} active</span>}
               </p>
             </div>
-            <ShoppingBag size={28} className="text-slate-200" />
+            <button
+              onClick={() => refetch()}
+              disabled={isFetching}
+              title="Refresh orders"
+              className="btn-secondary btn-sm"
+            >
+              <RefreshCw size={15} className={isFetching ? 'animate-spin' : ''} />
+            </button>
           </div>
         </motion.div>
 
